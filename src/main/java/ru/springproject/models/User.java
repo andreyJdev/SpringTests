@@ -15,6 +15,7 @@ import java.util.List;
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
+@UniqueEmail(message = "{errors.user.email_unique}")
 public class User {
 
     @Id
@@ -26,7 +27,6 @@ public class User {
 
     @NotBlank(message = "{errors.user.not_empty}")
     @Email(message = "{errors.user.email_format}")
-    @UniqueEmail(message = "{errors.user.email_unique}")
     @Column(unique = true)
     private String email;
 
