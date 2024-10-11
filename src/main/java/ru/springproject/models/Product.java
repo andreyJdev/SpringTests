@@ -1,5 +1,6 @@
 package ru.springproject.models;
 
+import com.fasterxml.jackson.annotation.JsonView;
 import jakarta.persistence.*;
 import jakarta.validation.constraints.NotEmpty;
 import jakarta.validation.constraints.NotNull;
@@ -8,6 +9,7 @@ import jakarta.validation.constraints.Size;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
+import ru.springproject.utils.Views;
 
 import java.util.List;
 
@@ -20,21 +22,32 @@ public class Product {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
+    @JsonView(Views.Internal.class)
     private Long id;
 
     @NotEmpty
     @Size(min = 2, max = 15)
+    @JsonView(Views.UserDetails.class)
     private String name;
 
     @NotNull
     @Positive
+    @JsonView(Views.UserDetails.class)
     private Integer price;
-
+    @JsonView(Views.UserDetails.class)
     private String description;
 
-    @ManyToMany
-    @JoinTable(name = "order_product",
-    joinColumns = @JoinColumn(name = "product_id"),
-    inverseJoinColumns = @JoinColumn(name = "order_id"))
+    @ManyToMany(mappedBy = "products")
+    @JsonView(Views.Internal.class)
     private List<Order> orders;
+
+    @Override
+    public String toString() {
+        return "Product{" +
+                "id=" + id +
+                ", name='" + name + '\'' +
+                ", price=" + price +
+                ", description='" + description + '\'' +
+                '}';
+    }
 }

@@ -7,11 +7,9 @@ import org.springframework.http.ProblemDetail;
 import org.springframework.http.ResponseEntity;
 import org.springframework.validation.BindException;
 import org.springframework.validation.ObjectError;
-import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
-import org.springframework.web.util.UriComponentsBuilder;
 import ru.springproject.utils.UserNotFoundException;
 
 import java.util.Locale;
@@ -47,7 +45,7 @@ public class ExceptionsHandlerController {
     ResponseEntity<ProblemDetail> bindExceptionHandle(BindException e, Locale locale) {
         ProblemDetail problemDetail = ProblemDetail.forStatusAndDetail(HttpStatus.BAD_REQUEST, this.messageSource.
                 getMessage("errors.user.bind_exception",
-                        new Object[0], "Некорректные данные", locale));
+                        new Object[0], "errors.user.bind_exception", locale));
 
         problemDetail.setProperty("errors", e.getBindingResult().getAllErrors()
                 .stream()

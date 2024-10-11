@@ -19,7 +19,7 @@ public class UniqueEmailValidator implements ConstraintValidator<UniqueEmail, Us
         }
         // для нового пользователя всегда id == null
         if (user.getId() == null) {
-            return isEmailUnique(user.getEmail());
+            return isEmailUnique(user.getEmail().toLowerCase());
         // апдейт пользователя
         } else {
             return isEmailUniqueForExistingUser(user);
@@ -43,17 +43,18 @@ public class UniqueEmailValidator implements ConstraintValidator<UniqueEmail, Us
 
     private boolean isEmailUniqueForExistingUser(User user) {
         try {
+            String email = user.getEmail().toLowerCase();
             // проверка, есть ли пользователь с указанным id
             User existingUser = entityManager
                     .createQuery("SELECT u FROM User u WHERE u.id = :id", User.class)
                     .setParameter("id", user.getId())
                     .getSingleResult();
             // если email не изменился
-            if (existingUser.getEmail().equals(user.getEmail())) {
+            if (existingUser.getEmail().equals(email)) {
                 return true;
             }
             // иначе проверка на уникальность
-            return isEmailUnique(user.getEmail());
+            return isEmailUnique(email);
         // отключаем вторую проверку на уровне БД
         } catch (NullPointerException e) {
             return true;
