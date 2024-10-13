@@ -11,7 +11,6 @@ import org.springframework.http.ProblemDetail;
 import org.springframework.validation.BindException;
 import org.springframework.validation.FieldError;
 import org.springframework.validation.MapBindingResult;
-import ru.springproject.utils.UserNotFoundException;
 
 import java.util.List;
 import java.util.Locale;

@@ -1,13 +1,12 @@
 package ru.springproject.utils;
 
-public class UserNotFoundException extends RuntimeException {
-
+public class OrderNotFoundException extends RuntimeException {
     private final String message;
 
-    public UserNotFoundException(String message) {
+    public OrderNotFoundException(String message) {
         this.message = message;
     }
-    @Override
+
     public String getMessage() {
         return message;
     }

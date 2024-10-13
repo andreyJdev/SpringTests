@@ -3,18 +3,15 @@ package ru.springproject.services;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-import ru.springproject.dto.OrderRequestDTO;
-import ru.springproject.dto.OrderResponseDTO;
-import ru.springproject.dto.UserResponseDTO;
+import ru.springproject.dto.*;
 import ru.springproject.models.Order;
 import ru.springproject.models.Product;
-import ru.springproject.models.User;
 import ru.springproject.repositories.OrdersRepository;
 import ru.springproject.repositories.ProductsRepository;
 import ru.springproject.repositories.UsersRepository;
-import ru.springproject.utils.UserNotFoundException;
+import ru.springproject.utils.CustomerNotFoundException;
+import ru.springproject.utils.ProductNotFoundException;
 
-import java.time.LocalDateTime;
 import java.util.*;
 import java.util.stream.Collectors;
 
@@ -27,47 +24,20 @@ public class MarketServiceImpl implements MarketService {
     private final OrdersRepository ordersRepository;
     private final UsersRepository usersRepository;
 
-    public List<User> findAllUsers() {
-        return this.usersRepository.findAll();
-    }
-
-    public Map<UserResponseDTO, Set<OrderResponseDTO>> findUserByIdWithOrder(Long id) {
-        User user = this.usersRepository.findByIdWithOrder(id)
-                .orElseThrow(() -> new UserNotFoundException("errors.user.not_found"));
-
-        Set<OrderResponseDTO> orders = user.getOrdersList().stream()
-                .map(OrderResponseDTO::new)
-                .collect(Collectors.toSet());
-
-        return Collections.singletonMap(new UserResponseDTO(user), orders);
-    }
-
     @Transactional
-    public User saveUser(User newUser) {
-        newUser.setEmail(newUser.getEmail().toLowerCase());
-        return this.usersRepository.save(newUser);
-    }
-
-    @Transactional
-    public int deleteUser(Long id) {
-        return this.usersRepository.removeById(id);
-    }
-
-    // в разработке
-    @Transactional
-    public void createOrder(OrderRequestDTO request) {
-        if (request == null || request.getProductsIds() == null || request.getProductsIds().isEmpty()) {
+    public OrderResponseDTO createOrder(OrderCreateRequestDTO request) {
+        if (request == null || request.productsIds() == null || request.productsIds().isEmpty()) {
             throw new RuntimeException();
         }
-        Order order = new Order();
+        Order order = new Order(request);
 
-        order.setProducts(this.productsRepository.findByIdIn(new ArrayList<>(request.getProductsIds())));
+        order.setProducts(
+                recalculateQuantityAndSaveProducts(this.productsRepository
+                                .findByIdIn(new ArrayList<>(request.productsIds()))));
+
         order.setOwner(this.usersRepository
-                .findById(request.getOwnerId())
-                .orElseThrow(() -> new UserNotFoundException("errors.user.not_found")));
-
-        order.setId(null);
-        order.setOrderDate(LocalDateTime.now());
+                .findById(request.ownerId())
+                .orElseThrow(() -> new CustomerNotFoundException("User not found")));
 
         int totalPrice = order.getProducts()
                 .stream()
@@ -75,6 +45,55 @@ public class MarketServiceImpl implements MarketService {
                 .sum();
         order.setTotalPrice(totalPrice);
 
-        this.ordersRepository.save(order);
+        return new OrderResponseDTO(this.ordersRepository.save(order));
+    }
+
+    public Optional<Set<ProductResponseDTO>> findAllProducts() {
+        return Optional.of(this.productsRepository
+                .findAll()
+                .stream()
+                .map(ProductResponseDTO::new)
+                .collect(Collectors.toSet()));
+    }
+
+    public Optional<ProductResponseDTO> findProductById(Long id) {
+        return this.productsRepository.findById(id).map(ProductResponseDTO::new);
+    }
+
+    @Transactional
+    public ProductResponseDTO createProduct(ProductCreateRequestDTO request) {
+        return new ProductResponseDTO(
+                this.productsRepository
+                        .save(new Product(request)));
+    }
+
+    @Transactional
+    public ProductResponseDTO updateProduct(Long id, ProductUpdateRequestDTO request) {
+        Product savedProduct = this.productsRepository.findById(id)
+                .map(existingProduct -> this.productsRepository.save(new Product(id, request)))
+                .orElseThrow(() -> new ProductNotFoundException("Product not found"));
+
+        return new ProductResponseDTO(savedProduct);
+    }
+
+    @Transactional
+    public int deleteProduct(Long id) {
+        return this.productsRepository.removeById(id);
+    }
+
+    @Override
+    public Optional<OrderResponseDTO> findOrderById(Long id) {
+        return this.ordersRepository.findById(id).map(OrderResponseDTO::new);
+    }
+
+    public List<Product> recalculateQuantityAndSaveProducts(List<Product> products) {
+        Map<Long, Product> productMap = new HashMap<>();
+        products.forEach(product -> {
+            productMap.putIfAbsent(product.getId(), product);
+            Product existingProduct = productMap.get(product.getId());
+            existingProduct.setQuantityInStock(existingProduct.getQuantityInStock() - 1);
+        });
+        this.productsRepository.saveAll(productMap.values());
+        return products;
     }
 }

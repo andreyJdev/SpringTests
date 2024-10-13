@@ -9,11 +9,8 @@ import org.mockito.Mock;
 import org.springframework.test.context.junit.jupiter.SpringExtension;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.setup.MockMvcBuilders;
-import ru.springproject.dto.OrderResponseDTO;
-import ru.springproject.dto.UserResponseDTO;
-import ru.springproject.models.User;
+import ru.springproject.models.Customer;
 import ru.springproject.services.MarketService;
-import ru.springproject.utils.UserNotFoundException;
 
 import java.util.*;
 
@@ -44,7 +41,7 @@ class MarketControllerTest {
     @Test
     void getUsers_ReturnUsers() throws Exception {
         // given
-        List<User> users = Arrays.asList(new User(1L, "John Doe", "john@example.com", new ArrayList<>()));
+        List<Customer> users = Arrays.asList(new Customer(1L, "John Doe", "john@example.com", new ArrayList<>()));
         when(marketService.findAllUsers()).thenReturn(users);
 
         // when
@@ -62,7 +59,7 @@ class MarketControllerTest {
     @Test
     void getUserById_RequestIsValid_ReturnUser() throws Exception {
         // given
-        User user = new User(1L, "John Doe", "john@example.com", new ArrayList<>());
+        Customer user = new Customer(1L, "John Doe", "john@example.com", new ArrayList<>());
         Set<OrderResponseDTO> orders = new HashSet<>();
         Map<UserResponseDTO, Set<OrderResponseDTO>> userWithOrders = Collections.singletonMap(new UserResponseDTO(user), orders);
 
@@ -85,8 +82,8 @@ class MarketControllerTest {
     @Test
     void createUser_RequestIsValid_ReturnsResponseEntity() throws Exception {
         // given
-        User newUser = new User(1L, "John Doe", "john@example.com", null);
-        when(marketService.saveUser(any(User.class))).thenReturn(newUser);
+        Customer newUser = new Customer(1L, "John Doe", "john@example.com", null);
+        when(marketService.saveUser(any(Customer.class))).thenReturn(newUser);
 
         ObjectMapper objectMapper = new ObjectMapper();
         String newUserJson = objectMapper.writeValueAsString(newUser);
@@ -104,8 +101,8 @@ class MarketControllerTest {
     @Test
     void updateUser_RequestIsValid_ReturnsResponseEntity() throws Exception {
         // given
-        User updatedUser = new User(1L, "John Doe", "john@example.com", null);
-        when(marketService.saveUser(any(User.class))).thenReturn(updatedUser);
+        Customer updatedUser = new Customer(1L, "John Doe", "john@example.com", null);
+        when(marketService.saveUser(any(Customer.class))).thenReturn(updatedUser);
 
         ObjectMapper objectMapper = new ObjectMapper();
         String updatedUserJson = objectMapper.writeValueAsString(updatedUser);

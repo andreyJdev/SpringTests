@@ -10,7 +10,9 @@ import org.springframework.validation.ObjectError;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
-import ru.springproject.utils.UserNotFoundException;
+import ru.springproject.utils.CustomerNotFoundException;
+import ru.springproject.utils.OrderNotFoundException;
+import ru.springproject.utils.ProductNotFoundException;
 
 import java.util.Locale;
 
@@ -22,7 +24,7 @@ public class ExceptionsHandlerController {
     private final MessageSource messageSource;
 
     @ExceptionHandler(Exception.class)
-    public ResponseEntity<ProblemDetail> internalServerErrorHandle(Exception e, Locale locale) {
+    public ResponseEntity<ProblemDetail> handleInternalServerError(Exception e, Locale locale) {
         ProblemDetail problemDetail = ProblemDetail.forStatusAndDetail(HttpStatus.INTERNAL_SERVER_ERROR,
                 messageSource.getMessage("errors.user.internal_server_error",
                         new Object[0], "errors.user.internal_server_error", locale));
@@ -32,17 +34,35 @@ public class ExceptionsHandlerController {
         return ResponseEntity.internalServerError().body(problemDetail);
     }
 
-    @ExceptionHandler(UserNotFoundException.class)
-    public ResponseEntity<ProblemDetail> userNotFoundExceptionHandle(UserNotFoundException e, Locale locale) {
+    @ExceptionHandler(ProductNotFoundException.class)
+    public ResponseEntity<ProblemDetail> handleProductNotFoundException(ProductNotFoundException e, Locale locale) {
         ProblemDetail problemDetail = ProblemDetail.forStatusAndDetail(HttpStatus.NOT_FOUND,
-                messageSource.getMessage("errors.user.not_found",
-                        new Object[0], "errors.user.not_found", locale));
+                messageSource.getMessage("errors.product.not_found",
+                        new Object[0], e.getMessage(), locale));
+
+        return ResponseEntity.status(HttpStatus.NOT_FOUND).body(problemDetail);
+    }
+
+    @ExceptionHandler(CustomerNotFoundException.class)
+    public ResponseEntity<ProblemDetail> handleProductNotFoundException(CustomerNotFoundException e, Locale locale) {
+        ProblemDetail problemDetail = ProblemDetail.forStatusAndDetail(HttpStatus.NOT_FOUND,
+                messageSource.getMessage("errors.customer.not_found",
+                        new Object[0], e.getMessage(), locale));
+
+        return ResponseEntity.status(HttpStatus.NOT_FOUND).body(problemDetail);
+    }
+
+    @ExceptionHandler(OrderNotFoundException.class)
+    public ResponseEntity<ProblemDetail> handleOrderNotFoundException(OrderNotFoundException e, Locale locale) {
+        ProblemDetail problemDetail = ProblemDetail.forStatusAndDetail(HttpStatus.NOT_FOUND,
+                messageSource.getMessage("errors.customer.not_found",
+                        new Object[0], e.getMessage(), locale));
 
         return ResponseEntity.status(HttpStatus.NOT_FOUND).body(problemDetail);
     }
 
     @ExceptionHandler(BindException.class)
-    ResponseEntity<ProblemDetail> bindExceptionHandle(BindException e, Locale locale) {
+    ResponseEntity<ProblemDetail> handleBindException(BindException e, Locale locale) {
         ProblemDetail problemDetail = ProblemDetail.forStatusAndDetail(HttpStatus.BAD_REQUEST, this.messageSource.
                 getMessage("errors.user.bind_exception",
                         new Object[0], "errors.user.bind_exception", locale));

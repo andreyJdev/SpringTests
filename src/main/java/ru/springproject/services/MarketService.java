@@ -1,25 +1,25 @@
 package ru.springproject.services;
 
-import ru.springproject.dto.OrderRequestDTO;
-import ru.springproject.dto.OrderResponseDTO;
-import ru.springproject.dto.UserResponseDTO;
+import ru.springproject.dto.*;
 import ru.springproject.models.Order;
-import ru.springproject.models.User;
 
-import java.util.List;
-import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 
 public interface MarketService {
 
-    List<User> findAllUsers();
 
-    Map<UserResponseDTO, Set<OrderResponseDTO>> findUserByIdWithOrder(Long id);
+    OrderResponseDTO createOrder(OrderCreateRequestDTO request);
 
-    User saveUser(User newUser);
+    Optional<Set<ProductResponseDTO>> findAllProducts();
 
-    int deleteUser(Long id);
-    // в разработке (должен быть убран в отдельный service)
-    void createOrder(OrderRequestDTO request);
+    Optional<ProductResponseDTO> findProductById(Long id);
+
+    ProductResponseDTO createProduct(ProductCreateRequestDTO request);
+
+    ProductResponseDTO updateProduct(Long id, ProductUpdateRequestDTO request);
+
+    int deleteProduct(Long id);
+
+    Optional<OrderResponseDTO> findOrderById(Long id);
 }

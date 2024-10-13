@@ -3,19 +3,13 @@ package ru.springproject.services;
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.Mockito.*;
 
-import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
-import ru.springproject.dto.OrderResponseDTO;
-import ru.springproject.dto.UserResponseDTO;
-import ru.springproject.models.User;
-import ru.springproject.repositories.OrdersRepository;
-import ru.springproject.repositories.ProductsRepository;
+import ru.springproject.models.Customer;
 import ru.springproject.repositories.UsersRepository;
-import ru.springproject.utils.UserNotFoundException;
 
 import java.util.*;
 
@@ -31,11 +25,11 @@ class MarketServiceImplTest {
     @Test
     void findAllUsers_ReturnUsers() {
         // given
-        List<User> users = Arrays.asList(new User(1L, "John Doe", "john@example.com", new ArrayList<>()));
+        List<Customer> users = Arrays.asList(new Customer(1L, "John Doe", "john@example.com", new ArrayList<>()));
         when(usersRepository.findAll()).thenReturn(users);
 
         // when
-        List<User> result = marketService.findAllUsers();
+        List<Customer> result = marketService.findAllUsers();
 
         // then
         assertEquals(users, result);
@@ -46,7 +40,7 @@ class MarketServiceImplTest {
     @Test
     void findUserByIdWithOrder_UserExists_ReturnUserWithOrders() {
         // given
-        User user = new User(1L, "John Doe", "john@example.com", new ArrayList<>());
+        Customer user = new Customer(1L, "John Doe", "john@example.com", new ArrayList<>());
         Set<OrderResponseDTO> orders = new HashSet<>();
         Map<UserResponseDTO, Set<OrderResponseDTO>> expectedResponse = Collections.singletonMap(new UserResponseDTO(user), orders);
 
@@ -78,11 +72,11 @@ class MarketServiceImplTest {
     @Test
     void saveUser_ValidUser_SavesUser() {
         // given
-        User user = new User(null, "John Doe", "john@example.com", new ArrayList<>());
+        Customer user = new Customer(null, "John Doe", "john@example.com", new ArrayList<>());
         when(usersRepository.save(user)).thenReturn(user);
 
         // when
-        User result = marketService.saveUser(user);
+        Customer result = marketService.saveUser(user);
 
         // then
         assertEquals(user, result);
