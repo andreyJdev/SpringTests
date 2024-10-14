@@ -1,20 +1,34 @@
 package ru.springproject.services;
 
-import static org.junit.jupiter.api.Assertions.*;
-import static org.mockito.Mockito.*;
-
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import ru.springproject.dto.*;
 import ru.springproject.models.Customer;
+import ru.springproject.models.Order;
+import ru.springproject.models.Product;
+import ru.springproject.repositories.OrdersRepository;
+import ru.springproject.repositories.ProductsRepository;
 import ru.springproject.repositories.UsersRepository;
 
-import java.util.*;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Optional;
+import java.util.Set;
+
+import static org.junit.jupiter.api.Assertions.*;
+import static org.mockito.Mockito.*;
 
 @ExtendWith(MockitoExtension.class)
 class MarketServiceImplTest {
+
+    @Mock
+    ProductsRepository productsRepository;
+
+    @Mock
+    OrdersRepository ordersRepository;
 
     @Mock
     UsersRepository usersRepository;
@@ -23,78 +37,142 @@ class MarketServiceImplTest {
     MarketServiceImpl marketService;
 
     @Test
-    void findAllUsers_ReturnUsers() {
+    void createOrder_ValidRequest_CreatesOrder() {
         // given
-        List<Customer> users = Arrays.asList(new Customer(1L, "John Doe", "john@example.com", new ArrayList<>()));
-        when(usersRepository.findAll()).thenReturn(users);
+        OrderCreateRequestDTO request = new OrderCreateRequestDTO("123 Main St", List.of(1L, 2L), 1L);
+
+        List<Product> products = List
+                .of(new Product(1L, "Product 1", "Desc", 100, 10, new ArrayList<>()),
+                        new Product(2L, "Product 2", "Desc", 200, 20, new ArrayList<>()));
+        Customer user = new Customer(1L, "John", "Doe", "john@example.com", "+7(932)492-32-32", new ArrayList<>());
+        Order savedOrder = new Order();
+
+        when(productsRepository.findByIdIn(anyList())).thenReturn(products);
+        when(usersRepository.findById(1L)).thenReturn(Optional.of(user));
+        when(ordersRepository.save(any(Order.class))).thenReturn(savedOrder);
 
         // when
-        List<Customer> result = marketService.findAllUsers();
+        OrderResponseDTO response = marketService.createOrder(request);
 
         // then
-        assertEquals(users, result);
-        verify(usersRepository).findAll();
-        verifyNoMoreInteractions(usersRepository);
+        assertNotNull(response);
+        verify(productsRepository).findByIdIn(anyList());
+        verify(usersRepository).findById(1L);
+        verify(ordersRepository).save(any(Order.class));
     }
 
     @Test
-    void findUserByIdWithOrder_UserExists_ReturnUserWithOrders() {
+    void findAllProducts_ReturnProducts() {
         // given
-        Customer user = new Customer(1L, "John Doe", "john@example.com", new ArrayList<>());
-        Set<OrderResponseDTO> orders = new HashSet<>();
-        Map<UserResponseDTO, Set<OrderResponseDTO>> expectedResponse = Collections.singletonMap(new UserResponseDTO(user), orders);
-
-        when(usersRepository.findByIdWithOrder(1L)).thenReturn(Optional.of(user));
+        List<Product> products = List
+                .of(new Product(1L, "Product 1", "Desc", 100, 10, new ArrayList<>()),
+                        new Product(2L, "Product 2", "Desc", 200, 20, new ArrayList<>()));
+        when(productsRepository.findAll()).thenReturn(products);
 
         // when
-        Map<UserResponseDTO, Set<OrderResponseDTO>> result = marketService.findUserByIdWithOrder(1L);
+        Optional<Set<ProductResponseDTO>> result = marketService.findAllProducts();
 
         // then
-        assertEquals(expectedResponse, result);
-        verify(usersRepository).findByIdWithOrder(1L);
-        verifyNoMoreInteractions(usersRepository);
+        assertTrue(result.isPresent());
+        assertEquals(2, result.get().size());
+        verify(productsRepository).findAll();
     }
 
     @Test
-    void findUserByIdWithOrder_UserDoesNotExist_ThrowsUserNotFoundException() {
+    void findProductById_ExistingProduct_ReturnProduct() {
         // given
-        when(usersRepository.findByIdWithOrder(1L)).thenReturn(Optional.empty());
+        Product product = new Product(1L, "Product 1", "Desc", 100, 10, new ArrayList<>());
+        when(productsRepository.findById(1L)).thenReturn(Optional.of(product));
 
         // when
-        UserNotFoundException e = assertThrows(UserNotFoundException.class, () -> marketService.findUserByIdWithOrder(1L));
+        Optional<ProductResponseDTO> result = marketService.findProductById(1L);
 
         // then
-        assertEquals("errors.user.not_found", e.getMessage());
-        verify(usersRepository).findByIdWithOrder(1L);
-        verifyNoMoreInteractions(usersRepository);
+        assertTrue(result.isPresent());
+        assertEquals("Product 1", result.get().name());
+        verify(productsRepository).findById(1L);
     }
 
     @Test
-    void saveUser_ValidUser_SavesUser() {
+    void createProduct_ValidRequest_SavesProduct() {
         // given
-        Customer user = new Customer(null, "John Doe", "john@example.com", new ArrayList<>());
-        when(usersRepository.save(user)).thenReturn(user);
+        ProductCreateRequestDTO request = new ProductCreateRequestDTO("Product 1", "Description", 100, 10);
+        Product savedProduct = new Product(request);
+        when(productsRepository.save(any(Product.class))).thenReturn(savedProduct);
 
         // when
-        Customer result = marketService.saveUser(user);
+        ProductResponseDTO result = marketService.createProduct(request);
 
         // then
-        assertEquals(user, result);
-        verify(usersRepository).save(user);
-        verifyNoMoreInteractions(usersRepository);
+        assertNotNull(result);
+        assertEquals("Product 1", result.name());
+        verify(productsRepository).save(any(Product.class));
     }
 
     @Test
-    void deleteUser_UserExists_RemovesUser() {
+    void updateProduct_ExistingProduct_UpdatesProduct() {
         // given
-        when(usersRepository.removeById(1L)).thenReturn(1);
+        ProductUpdateRequestDTO request = new ProductUpdateRequestDTO("Updated Product", "Updated Description", 200, 20);
+        Product existingProduct = new Product(1L, "Product 1", "Desc", 100, 10, new ArrayList<>());
+        Product savedProduct = new Product(1L, request);
+
+        when(productsRepository.findById(1L)).thenReturn(Optional.of(existingProduct));
+        when(productsRepository.save(any(Product.class))).thenReturn(savedProduct);
 
         // when
-        int result = marketService.deleteUser(1L);
+        ProductResponseDTO result = marketService.updateProduct(1L, request);
+
+        // then
+        assertNotNull(result);
+        assertEquals("Updated Product", result.name());
+        verify(productsRepository).findById(1L);
+        verify(productsRepository).save(any(Product.class));
+    }
+
+    @Test
+    void deleteProduct_ExistingProduct_RemovesProduct() {
+        // given
+        when(productsRepository.removeById(1L)).thenReturn(1);
+
+        // when
+        int result = marketService.deleteProduct(1L);
 
         // then
         assertEquals(1, result);
-        verify(usersRepository).removeById(1L);
-        verifyNoMoreInteractions(usersRepository);
+        verify(productsRepository).removeById(1L);
+    }
+
+    @Test
+    void findOrderById_ExistingOrder_ReturnOrder() {
+        // given
+        Order order = new Order();
+        when(ordersRepository.findById(1L)).thenReturn(Optional.of(order));
+
+        // when
+        Optional<OrderResponseDTO> result = marketService.findOrderById(1L);
+
+        // then
+        assertTrue(result.isPresent());
+        verify(ordersRepository).findById(1L);
+    }
+
+    @Test
+    void recalculateQuantityAndSaveProducts_ProductsUpdated() {
+        // given
+        List<Product> products = List.of(
+                new Product(1L, "Product 1", "Desc", 100, 10, new ArrayList<>()),
+                new Product(2L, "Product 2", "Desc", 200, 20, new ArrayList<>())
+        );
+
+        // when
+        doReturn(products).when(productsRepository).saveAll(anyCollection());
+
+        // then
+        List<Product> result = marketService.recalculateQuantityAndSaveProducts(products);
+        assertEquals(2, result.size());
+        assertEquals(9, result.get(0).getQuantityInStock()); // Уменьшили на 2
+        assertEquals(19, result.get(1).getQuantityInStock()); // Уменьшили на 2
+        verify(productsRepository).saveAll(anyCollection());
     }
 }
+

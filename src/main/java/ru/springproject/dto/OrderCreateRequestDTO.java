@@ -1,16 +1,11 @@
 package ru.springproject.dto;
 
 import com.fasterxml.jackson.annotation.JsonView;
-import jakarta.persistence.*;
+import jakarta.persistence.Column;
 import jakarta.validation.constraints.NotEmpty;
 import jakarta.validation.constraints.NotNull;
-import ru.springproject.models.Customer;
-import ru.springproject.models.Product;
-import ru.springproject.utils.OrderStatus;
 import ru.springproject.utils.Views;
 
-import java.time.LocalDateTime;
-import java.util.ArrayList;
 import java.util.List;
 
 public record OrderCreateRequestDTO(

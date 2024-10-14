@@ -9,135 +9,130 @@ import org.mockito.Mock;
 import org.springframework.test.context.junit.jupiter.SpringExtension;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.setup.MockMvcBuilders;
-import ru.springproject.models.Customer;
+import org.springframework.validation.SmartValidator;
+import ru.springproject.dto.ProductCreateRequestDTO;
+import ru.springproject.dto.ProductResponseDTO;
+import ru.springproject.dto.ProductUpdateRequestDTO;
 import ru.springproject.services.MarketService;
 
-import java.util.*;
+import java.util.Optional;
+import java.util.Set;
 
-import static org.junit.jupiter.api.Assertions.*;
-import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
-import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.content;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
-
 
 @ExtendWith(SpringExtension.class)
 class MarketControllerTest {
 
     @Mock
-    private MarketService marketService;
+    MarketService marketService;
+
+    @Mock
+    private SmartValidator validator;
 
     @InjectMocks
-    private MarketController marketController;
+    MarketController marketController;
 
-    private MockMvc mockMvc;
+    MockMvc mockMvc;
+
+    private final ObjectMapper objectMapper = new ObjectMapper();
+
 
     @BeforeEach
     void setUp() {
+        marketController = new MarketController(marketService, objectMapper, validator);
         mockMvc = MockMvcBuilders.standaloneSetup(marketController).build();
     }
 
     @Test
-    void getUsers_ReturnUsers() throws Exception {
+    void getAllProducts_ReturnProducts() throws Exception {
         // given
-        List<Customer> users = Arrays.asList(new Customer(1L, "John Doe", "john@example.com", new ArrayList<>()));
-        when(marketService.findAllUsers()).thenReturn(users);
+        Set<ProductResponseDTO> products = Set.of(new ProductResponseDTO(1L, "Product 1", "Desc", 100, 10));
+        when(marketService.findAllProducts()).thenReturn(Optional.of(products));
+        String productsJson = objectMapper.writeValueAsString(products);
 
         // when
-        mockMvc.perform(get("/api/v1/users"))
-
+        mockMvc.perform(get("/api/v1/products"))
                 // then
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$[0].id").value(1))
-                .andExpect(jsonPath("$[0].name").value("John Doe"))
-                .andExpect(jsonPath("$[0].email").value("john@example.com"))
-                // проверка, что поле скрыто через JsonView
-                .andExpect(jsonPath("$[0].ordersList").doesNotExist());
+                .andExpect(content().json(productsJson));
+
+        verify(marketService).findAllProducts();
     }
 
     @Test
-    void getUserById_RequestIsValid_ReturnUser() throws Exception {
+    void getProductById_ReturnProduct() throws Exception {
         // given
-        Customer user = new Customer(1L, "John Doe", "john@example.com", new ArrayList<>());
-        Set<OrderResponseDTO> orders = new HashSet<>();
-        Map<UserResponseDTO, Set<OrderResponseDTO>> userWithOrders = Collections.singletonMap(new UserResponseDTO(user), orders);
-
-        when(marketService.findUserByIdWithOrder(1L)).thenReturn(userWithOrders);
+        ProductResponseDTO product = new ProductResponseDTO(1L, "Product 1", "Desc", 100, 10);
+        when(marketService.findProductById(1L)).thenReturn(Optional.of(product));
+        String productJson = objectMapper.writeValueAsString(product);
 
         // when
-        String responseContent = mockMvc.perform(get("/api/v1/users/1"))
-
+        mockMvc.perform(get("/api/v1/products/1"))
                 // then
                 .andExpect(status().isOk())
-                .andReturn()
-                .getResponse()
-                .getContentAsString();
-        // в Json содержится пустой список
-        assertTrue(responseContent.contains("[]"));
-        // в Json содержится имя
-        assertTrue(responseContent.contains("John Doe"));
+                .andExpect(content().json(productJson));
+
+        verify(marketService).findProductById(1L);
     }
 
-    @Test
-    void createUser_RequestIsValid_ReturnsResponseEntity() throws Exception {
-        // given
-        Customer newUser = new Customer(1L, "John Doe", "john@example.com", null);
-        when(marketService.saveUser(any(Customer.class))).thenReturn(newUser);
 
-        ObjectMapper objectMapper = new ObjectMapper();
-        String newUserJson = objectMapper.writeValueAsString(newUser);
+    @Test
+    void createProduct_ValidRequest_CreatesProduct() throws Exception {
+        // given
+        ProductCreateRequestDTO request = new ProductCreateRequestDTO("Product 1", "Desc", 100, 10);
+        ProductResponseDTO response = new ProductResponseDTO(1L, "Product 1", "Desc", 100, 10);
+        String requestJson = objectMapper.writeValueAsString(request);
+        String responseJson = objectMapper.writeValueAsString(response);
+
+        when(marketService.createProduct(request)).thenReturn(response);
 
         // when
-        mockMvc.perform(post("/api/v1/create")
-
-                        // then
+        mockMvc.perform(post("/api/v1/products/create")
                         .contentType("application/json")
-                        .content(newUserJson))
+                        .content(requestJson))
+                // then
                 .andExpect(status().isCreated())
-                .andExpect(jsonPath("$.name").value("John Doe"));
+                .andExpect(content().json(responseJson));
+
+        verify(marketService).createProduct(request);
     }
 
-    @Test
-    void updateUser_RequestIsValid_ReturnsResponseEntity() throws Exception {
-        // given
-        Customer updatedUser = new Customer(1L, "John Doe", "john@example.com", null);
-        when(marketService.saveUser(any(Customer.class))).thenReturn(updatedUser);
 
-        ObjectMapper objectMapper = new ObjectMapper();
-        String updatedUserJson = objectMapper.writeValueAsString(updatedUser);
+    @Test
+    void updateProduct_ValidRequest_UpdatesProduct() throws Exception {
+        // given
+        ProductUpdateRequestDTO request = new ProductUpdateRequestDTO("Updated Product", "Updated Desc", 200, 20);
+        ProductResponseDTO response = new ProductResponseDTO(1L, "Updated Product", "Updated Desc", 200, 20);
+        String requestJson = objectMapper.writeValueAsString(request);
+        String responseJson = objectMapper.writeValueAsString(response);
+
+        when(marketService.updateProduct(1L, request)).thenReturn(response);
 
         // when
-        mockMvc.perform(patch("/api/v1/update")
-
-                        // then
+        mockMvc.perform(patch("/api/v1/products/1")
                         .contentType("application/json")
-                        .content(updatedUserJson))
+                        .content(requestJson))
+                // then
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.name").value("John Doe"));
+                .andExpect(content().json(responseJson));
+
+        verify(marketService).updateProduct(1L, request);
     }
 
     @Test
-    void deleteUser_RequestIsValid_ReturnsNoContent() throws Exception {
+    void deleteProduct_ValidRequest_DeletesProduct() throws Exception {
         // given
-        when(marketService.deleteUser(1L)).thenReturn(1);
+        when(marketService.deleteProduct(1L)).thenReturn(1);
 
         // when
-        mockMvc.perform(delete("/api/v1/users/1"))
-
+        mockMvc.perform(delete("/api/v1/products/1"))
                 // then
                 .andExpect(status().isNoContent());
-    }
 
-    @Test
-    void deleteUser_RequestIsInvalid_ThrowsUserNotFoundException() {
-        // given
-        when(marketService.deleteUser(1L)).thenReturn(0);
-
-        // when
-        UserNotFoundException e = assertThrows(UserNotFoundException.class, () -> this.marketController.deleteUser(1L));
-
-        // then
-        assertEquals("errors.user.not_found", e.getMessage());
+        verify(marketService).deleteProduct(1L);
     }
 }

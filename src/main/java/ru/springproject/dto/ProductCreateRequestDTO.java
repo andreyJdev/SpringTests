@@ -1,11 +1,8 @@
 package ru.springproject.dto;
 
-import com.fasterxml.jackson.annotation.JsonView;
-import jakarta.validation.constraints.Max;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Positive;
 import jakarta.validation.constraints.Size;
-import ru.springproject.utils.Views;
 
 public record ProductCreateRequestDTO(
 
@@ -21,4 +18,5 @@ public record ProductCreateRequestDTO(
 
         @NotNull(message = "Price cannot be null")
         @Positive(message = "Quantity must be at positive")
-        Integer quantityInStock) { }
+        Integer quantityInStock) {
+}

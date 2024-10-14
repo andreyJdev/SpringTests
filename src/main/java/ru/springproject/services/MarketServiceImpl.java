@@ -33,7 +33,7 @@ public class MarketServiceImpl implements MarketService {
 
         order.setProducts(
                 recalculateQuantityAndSaveProducts(this.productsRepository
-                                .findByIdIn(new ArrayList<>(request.productsIds()))));
+                        .findByIdIn(new ArrayList<>(request.productsIds()))));
 
         order.setOwner(this.usersRepository
                 .findById(request.ownerId())

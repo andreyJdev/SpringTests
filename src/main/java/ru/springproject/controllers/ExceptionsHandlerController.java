@@ -1,5 +1,6 @@
 package ru.springproject.controllers;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
 import lombok.RequiredArgsConstructor;
 import org.springframework.context.MessageSource;
 import org.springframework.http.HttpStatus;
@@ -26,10 +27,19 @@ public class ExceptionsHandlerController {
     @ExceptionHandler(Exception.class)
     public ResponseEntity<ProblemDetail> handleInternalServerError(Exception e, Locale locale) {
         ProblemDetail problemDetail = ProblemDetail.forStatusAndDetail(HttpStatus.INTERNAL_SERVER_ERROR,
-                messageSource.getMessage("errors.user.internal_server_error",
-                        new Object[0], "errors.user.internal_server_error", locale));
+                messageSource.getMessage("errors.server.internal_server_error",
+                        new Object[0], "Internal server error", locale));
 
         problemDetail.setProperty("error", e.getMessage());
+
+        return ResponseEntity.internalServerError().body(problemDetail);
+    }
+
+    @ExceptionHandler(JsonProcessingException.class)
+    public ResponseEntity<ProblemDetail> handleJsonProcessingException(JsonProcessingException e, Locale locale) {
+        ProblemDetail problemDetail = ProblemDetail.forStatusAndDetail(HttpStatus.INTERNAL_SERVER_ERROR,
+                messageSource.getMessage("errors.server.json_exception",
+                        new Object[0], "Json processing server error", locale));
 
         return ResponseEntity.internalServerError().body(problemDetail);
     }
